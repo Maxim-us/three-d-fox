@@ -1,10 +1,22 @@
-var THREEDFOX = function( element, model ) {
+var THREEDFOX = function( model ) {
 
 	/*
 	* Properties
 	*/
 	// this
 	var _this = this;
+
+	// id of wrap
+	this.wrapId = 'mx_fox_wrapper';
+
+	// check date
+	this.dateNow = Date.now();
+
+	// duration
+	this.duration = 4000;
+
+	// opacity canvas
+	this.canvasOpacity = 1;
 
 	// scene
 	this.scene = new THREE.Scene();
@@ -54,10 +66,16 @@ var THREEDFOX = function( element, model ) {
 			this.settings();
 
 			// cursor position
-			_this.cursorPosition();
+			this.cursorPosition();
 
 			// render
 			_this.renderer = this._renderer();
+
+			// custom styles
+			this.customStyles();
+
+			// window resize
+			this.windowResize();
 
 			// run loop
 			this.render();
@@ -66,7 +84,7 @@ var THREEDFOX = function( element, model ) {
 
 			var warning = WEBGL.getWebGLErrorMessage();
 
-			document.getElementById( element ).appendChild( warning );
+			document.body.appendChild( warning );
 
 		}
 	}
@@ -76,19 +94,22 @@ var THREEDFOX = function( element, model ) {
 	*/
 	this._renderer = function() {
 
-		var renderer = new THREE.WebGLRenderer( {
+		var renderer = new THREE.WebGLRenderer();
 
-			canvas: document.getElementById( element ),
-
-			antialias: true
-
-		} );
-
-		renderer.setClearColor( 0xffffff );
+		renderer.setClearColor( 0x000000 );
 
 		renderer.setPixelRatio( window.devicePixelRatio );
 
 		renderer.setSize( window.innerWidth, window.innerHeight );
+
+		// 
+		var canvasWrapper = document.createElement( 'div' );
+
+		canvasWrapper.setAttribute( 'id', _this.wrapId );
+
+		canvasWrapper.appendChild( renderer.domElement );
+
+		document.body.appendChild( canvasWrapper );
 
 		return renderer;
 
@@ -202,15 +223,86 @@ var THREEDFOX = function( element, model ) {
 	}
 
 	/*
+	* window resize
+	*/
+	this.windowResize = function() {
+
+		window.addEventListener( 'resize', function() {
+
+			var width = window.innerWidth;
+
+			var height = window.innerHeight;
+
+			_this.renderer.setSize( width, height );
+
+			_this.camera.aspect = width / height;
+
+			_this.camera.updateProjectionMatrix();
+
+		} );
+
+	}
+
+	// fade canvas
+	this.fadeCanvas = function() {
+
+		var intervalOpacity = ( 1 / _this.duration ) * ( 1000 / 60 );
+
+		_this.canvasOpacity -= intervalOpacity;		
+
+		// check date
+		if( Date.now() <= _this.dateNow + _this.duration ) {
+
+			document.getElementById( _this.wrapId ).style.opacity = _this.canvasOpacity;
+
+		} else {
+
+			document.getElementById( _this.wrapId ).remove();
+
+			return false;
+
+		}
+
+	}
+
+	/*
+	* style box
+	*/	
+	this.customStyles = function() {
+
+		var styleElement = document.createElement( 'style' );
+
+		styleElement.type = 'text/css';
+
+		var css = '#' + _this.wrapId + '{ position: fixed; top: 0; left: 0; } ';
+
+		var cssText = document.createTextNode( css );
+
+		styleElement.appendChild( cssText );
+
+		document.body.appendChild( styleElement );
+
+	}
+
+	/*
 	* loop
 	*/	
 	_this.render = function() {		
 
+		// render
 		_this.renderer.render( _this.scene, _this.camera );
-		//		
+
+		// position of model
 		_this.calcPosition();
 
-		requestAnimationFrame( _this.render );
+		// fade canvas
+		var loop = _this.fadeCanvas();
+
+		if( loop !== false ) {
+
+			requestAnimationFrame( _this.render );
+
+		}		
 
 	}
 
